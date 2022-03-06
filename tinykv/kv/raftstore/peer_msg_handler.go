@@ -49,7 +49,7 @@ func (d *peerMsgHandler) HandleMsg(msg message.Msg) {
 		if err := d.onRaftMsg(raftMsg); err != nil {
 			log.Error(fmt.Sprintf("%s handle raft message error %v", d.Tag, err))
 		}
-	case message.MsgTypeRaftCmd:
+	case message.MsgTypeRaftCmd: // raft command
 		raftCMD := msg.Data.(*message.MsgRaftCmd)
 		d.proposeRaftCommand(raftCMD.Request, raftCMD.Callback)
 	case message.MsgTypeTick:
@@ -618,8 +618,6 @@ func (d *peerMsgHandler) preProposeRaftCommand(req *raft_cmdpb.RaftCmdRequest) e
 }
 
 func (d *peerMsgHandler) proposeRaftCommand(msg *raft_cmdpb.RaftCmdRequest, cb *message.Callback) {
-	panic("not implemented yet")
-	// YOUR CODE HERE (lab1).
 	// Hint1: do `preProposeRaftCommand` check for the command, if the check fails, need to execute the
 	// callback function and return the error results. `ErrResp` is useful to generate error response.
 
@@ -631,6 +629,18 @@ func (d *peerMsgHandler) proposeRaftCommand(msg *raft_cmdpb.RaftCmdRequest, cb *
 	// The peer that is being checked is a leader. It might step down to be a follower later. It
 	// doesn't matter whether the peer is a leader or not. If it's not a leader, the proposing
 	// command log entry can't be committed. There are some useful information in the `ctx` of the `peerMsgHandler`.
+	if err := d.preProposeRaftCommand(msg); err != nil {
+		resp := ErrResp(err)
+		cb.Done(resp)
+		return
+	}
+	if d.stopped {
+		NotifyReqRegionRemoved(d.regionId, cb)
+	}
+	resp := newCmdResp()
+	BindRespTerm(resp, d.Term())
+	d.Propose(d.ctx.engine.Kv, d.ctx.cfg, cb, msg, resp)
+
 }
 
 func (d *peerMsgHandler) findSiblingRegion() (result *metapb.Region) {

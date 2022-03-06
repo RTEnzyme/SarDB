@@ -195,6 +195,7 @@ func (p *peer) MaybeDestroy() bool {
 	return true
 }
 
+// Destroy
 /// Does the real destroy worker.Task which includes:
 /// 1. Set the region to tombstone;
 /// 2. Clear data;
@@ -367,7 +368,9 @@ func (p *peer) HandleRaftReady(msgs []message.Msg, pdScheduler chan<- worker.Tas
 
 	// YOUR CODE HERE (lab1). There are some missing code pars marked with `Hint` above, try to finish them.
 	// Hint1: check if there's ready to be processed, if no return directly.
-	panic("not implemented yet")
+	if !p.RaftGroup.HasReady() {
+		return nil, msgs
+	}
 
 	// Start to handle the raft ready.
 	log.Debug(fmt.Sprintf("%v handle raft ready", p.Tag))
@@ -426,8 +429,8 @@ func (p *peer) HandleRaftReady(msgs []message.Msg, pdScheduler chan<- worker.Tas
 	// YOUR CODE HERE (lab1). There are some missing code pars marked with `Hint` above, try to finish them.
 	// Hint2: Try to advance the states in the raft group of this peer after processing the raft ready.
 	//        Check about the `Advance` method in for the raft group.
-	panic("not implemented yet")
-
+	//panic("not implemented yet")
+	p.RaftGroup.Advance(ready)
 	return applySnapResult, msgs
 }
 

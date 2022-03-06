@@ -156,20 +156,20 @@ func confchanger(t *testing.T, cluster *Cluster, ch chan bool, done *int32) {
 // - If confchangee is set, the cluster will schedule random conf change concurrently.
 // - If split is set, split region when size exceed 1024 bytes.
 func GenericTest(t *testing.T, part string, nclients int, unreliable bool, crash bool, partitions bool, maxraftlog int, confchange bool, split bool) {
-	nservers := 5
+	nservers := 5 // 5个server
 	cfg := config.NewTestConfig()
 	if maxraftlog != -1 {
-		cfg.RaftLogGcCountLimit = uint64(maxraftlog)
+		cfg.RaftLogGcCountLimit = uint64(maxraftlog) // 清理log的限制
 	}
-	if split {
+	if split { //是否对Region进行split
 		cfg.RegionMaxSize = 300
 		cfg.RegionSplitSize = 200
 	}
-	cluster := NewTestCluster(nservers, cfg)
+	cluster := NewTestCluster(nservers, cfg) // 新建存储的集群
 	cluster.Start()
 	defer cluster.Shutdown()
 
-	electionTimeout := cfg.RaftBaseTickInterval * time.Duration(cfg.RaftElectionTimeoutTicks)
+	electionTimeout := cfg.RaftBaseTickInterval * time.Duration(cfg.RaftElectionTimeoutTicks) // 设置选举的time out
 	// Wait for leader election
 	time.Sleep(2 * electionTimeout)
 
@@ -180,7 +180,7 @@ func GenericTest(t *testing.T, part string, nclients int, unreliable bool, crash
 	ch_confchange := make(chan bool)
 	ch_clients := make(chan bool)
 	clnts := make([]chan int, nclients)
-	for i := 0; i < nclients; i++ {
+	for i := 0; i < nclients; i++ { // 创建client
 		clnts[i] = make(chan int, 1)
 	}
 	for i := 0; i < 3; i++ {
@@ -188,6 +188,7 @@ func GenericTest(t *testing.T, part string, nclients int, unreliable bool, crash
 		atomic.StoreInt32(&done_clients, 0)
 		atomic.StoreInt32(&done_partitioner, 0)
 		writeCnt := uint64(0)
+		// 生成clients
 		go SpawnClientsAndWait(t, ch_clients, nclients, func(cli int, t *testing.T) {
 			j := 0
 			defer func() {

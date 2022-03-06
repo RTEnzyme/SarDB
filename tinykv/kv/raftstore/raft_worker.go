@@ -40,20 +40,20 @@ func (rw *raftWorker) run(closeCh <-chan struct{}, wg *sync.WaitGroup) {
 	// if the io write is slow.
 	maxMsgPerLoop := 256
 	for {
-		msgs = msgs[:0]
+		msgs = msgs[:0] // clear up messages
 		select {
 		case <-closeCh:
 			rw.applyCh <- nil
 			return
-		case msg := <-rw.raftCh:
+		case msg := <-rw.raftCh: // 从router接收到msg
 			msgs = append(msgs, msg)
 		}
-		pending := len(rw.raftCh)
+		pending := len(rw.raftCh) // 待处理的msg
 		if pending > maxMsgPerLoop {
 			pending = maxMsgPerLoop
 		}
 		for i := 0; i < pending; i++ {
-			msgs = append(msgs, <-rw.raftCh)
+			msgs = append(msgs, <-rw.raftCh) // 将channel中的消息都加入到msgs中，且限制只处理256条
 		}
 		peerStateMap := make(map[uint64]*peerState)
 		for _, msg := range msgs {

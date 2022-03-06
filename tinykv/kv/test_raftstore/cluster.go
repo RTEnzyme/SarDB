@@ -103,7 +103,7 @@ func (c *Cluster) Start() {
 	for storeID, engine := range c.engines {
 		peer := NewPeer(storeID, storeID)
 		firstRegion.Peers = append(firstRegion.Peers, peer)
-		err := raftstore.BootstrapStore(engine, clusterID, storeID)
+		err := raftstore.BootstrapStore(engine, clusterID, storeID) // kv db的引导程序
 		if err != nil {
 			log.Fatal(fmt.Sprintf("bootstrap store=%v unexpected error=%v", storeID, err))
 		}
