@@ -31,9 +31,14 @@ func (c *Commit) PrepareWrites(txn *mvcc.MvccTxn) (interface{}, error) {
 	// YOUR CODE HERE (lab2).
 	// Check if the commitTs is invalid, the commitTs must be greater than the transaction startTs. If not
 	// report unexpected error.
-	panic("PrepareWrites is not implemented for commit command")
+	//panic("PrepareWrites is not implemented for commit command")
 
 	response := new(kvrpcpb.CommitResponse)
+	if commitTs <= txn.StartTS {
+		response.Error = &kvrpcpb.KeyError{
+			Retryable: fmt.Sprintf("%vunexpected error: commitTs must be greater than transaction startTs", txn.StartTS)}
+		return response, fmt.Errorf("")
+	}
 
 	// Commit each key.
 	for _, k := range c.request.Keys {
@@ -53,7 +58,7 @@ func commitKey(key []byte, commitTs uint64, txn *mvcc.MvccTxn, response interfac
 	}
 
 	// If there is no correspond lock for this transaction.
-	panic("commitKey is not implemented yet")
+	//panic("commitKey is not implemented yet")
 	log.Debug("commitKey", zap.Uint64("startTS", txn.StartTS),
 		zap.Uint64("commitTs", commitTs),
 		zap.String("key", hex.EncodeToString(key)))
@@ -62,11 +67,17 @@ func commitKey(key []byte, commitTs uint64, txn *mvcc.MvccTxn, response interfac
 		// Key is locked by a different transaction, or there is no lock on the key. It's needed to
 		// check the commit/rollback record for this key, if nothing is found report lock not found
 		// error. Also the commit request could be stale that it's already committed or rolled back.
-
-		respValue := reflect.ValueOf(response)
-		keyError := &kvrpcpb.KeyError{Retryable: fmt.Sprintf("lock not found for key %v", key)}
-		reflect.Indirect(respValue).FieldByName("Error").Set(reflect.ValueOf(keyError))
-		return response, nil
+		write, _, err := txn.CurrentWrite(key)
+		if err != nil {
+			return nil, err
+		}
+		if write == nil || write.Kind == mvcc.WriteKindRollback { // 说明 no commit record for this key
+			respValue := reflect.ValueOf(response)
+			keyError := &kvrpcpb.KeyError{Retryable: fmt.Sprintf("lock not found for key %v", key)}
+			reflect.Indirect(respValue).FieldByName("Error").Set(reflect.ValueOf(keyError))
+			return response, nil
+		}
+		return nil, nil
 	}
 
 	// Commit a Write object to the DB

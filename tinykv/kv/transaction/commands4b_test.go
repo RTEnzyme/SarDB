@@ -304,7 +304,7 @@ func TestPrewriteWritten4B(t *testing.T) {
 	builder.assertLens(1, 0, 1)
 
 	builder.assert([]kv{
-		{cf: engine_util.CfDefault, key: []byte{3}, ts: 80, value: []byte{5}},
+		{cf: engine_util.CfDefault, key: []byte{3}, ts: 80, value: []byte{5}}, // 因为validate失败
 	})
 }
 
@@ -331,6 +331,7 @@ func TestPrewriteWrittenNoConflict4B(t *testing.T) {
 }
 
 // TestMultiplePrewrites4B tests that multiple prewrites to different keys succeeds.
+// Pass
 func TestMultiplePrewrites4B(t *testing.T) {
 	builder := newBuilder(t)
 	cmd := builder.prewriteRequest(mutation(3, []byte{42}, kvrpcpb.Op_Put))
@@ -352,6 +353,7 @@ func TestMultiplePrewrites4B(t *testing.T) {
 }
 
 // TestPrewriteOverwrite4B tests that two writes in the same prewrite succeed and we see the second write.
+// Pass
 func TestPrewriteOverwrite4B(t *testing.T) {
 	builder := newBuilder(t)
 	cmd := builder.prewriteRequest(mutation(3, []byte{42}, kvrpcpb.Op_Put), mutation(3, []byte{45}, kvrpcpb.Op_Put))
@@ -368,6 +370,7 @@ func TestPrewriteOverwrite4B(t *testing.T) {
 }
 
 // TestPrewriteMultiple4B tests that a prewrite with multiple mutations succeeds.
+// Pass
 func TestPrewriteMultiple4B(t *testing.T) {
 	builder := newBuilder(t)
 	cmd := builder.prewriteRequest(
