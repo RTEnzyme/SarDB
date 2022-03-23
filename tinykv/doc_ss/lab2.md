@@ -64,7 +64,7 @@ We're going to implement the above interface and their processing logic in tinyk
 
 In `kv/transaction/commands/command.go`, there is the interface for all the transaction commands.
 
-```
+```go
 // Command is an abstraction which covers the process from receiving a request from gRPC to returning a response.
 type Command interface {
 	Context() *kvrpcpb.Context
