@@ -163,6 +163,7 @@ func (s *tikvSnapshot) get(bo *Backoffer, k kv.Key) ([]byte, error) {
 					return nil, errors.Trace(err)
 				}
 			}
+			continue
 		}
 		return val, nil
 	}

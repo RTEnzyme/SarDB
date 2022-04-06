@@ -2,10 +2,10 @@ package tikv
 
 import (
 	"context"
-	"math/rand"
-
+	"fmt"
 	"github.com/pingcap/failpoint"
 	"github.com/pingcap/tidb/parser/terror"
+	"math/rand"
 
 	"github.com/pingcap-incubator/tinykv/proto/pkg/kvrpcpb"
 	. "github.com/pingcap/check"
@@ -51,6 +51,7 @@ func (s *testLab3Suite) checkValues(c *C, m map[string]string) {
 	txn := s.begin(c)
 	for k, v := range m {
 		val, err := txn.Get(context.TODO(), []byte(k))
+		fmt.Println(k, v, val)
 		c.Assert(err, IsNil)
 		c.Assert(string(val), Equals, v)
 	}
@@ -155,7 +156,9 @@ func (s *testLab3Suite) TestInitKeysAndMutations(c *C) {
 	c.Assert(len(committer.mutations), Equals, len(key2mut))
 	c.Assert(len(committer.keys), Equals, len(key2mut))
 	txnSize := 0
+	fmt.Println(committer.mutations)
 	for k, m := range committer.mutations {
+		fmt.Println(m)
 		c.Assert(m.Op, Equals, key2mut[k].Op)
 		c.Assert(m.Key, BytesEquals, key2mut[k].Key)
 		c.Assert(m.Value, BytesEquals, key2mut[k].Value)
@@ -166,6 +169,7 @@ func (s *testLab3Suite) TestInitKeysAndMutations(c *C) {
 }
 
 func (s *testLab3Suite) TestGroupKeysByRegion(c *C) {
+	fmt.Println("start")
 	var (
 		key1 = []byte("Z")
 		key2 = []byte("a1")
@@ -176,6 +180,7 @@ func (s *testLab3Suite) TestGroupKeysByRegion(c *C) {
 	keys := [][]byte{key2, key3, key4, key5}
 	rand.Shuffle(len(keys), func(i, j int) { keys[i], keys[j] = keys[j], keys[i] })
 	keys = append([][]byte{key1}, keys...)
+	fmt.Println(keys)
 	groups, first, err := s.store.GetRegionCache().GroupKeysByRegion(NewBackoffer(context.Background(), 1000), keys, nil)
 	c.Assert(err, IsNil)
 	c.Assert(first.GetID(), Equals, uint64(3))
@@ -200,6 +205,7 @@ func (s *testLab3Suite) TestGroupKeysByRegion(c *C) {
 }
 
 func (s *testLab3Suite) TestBuildPrewriteRequest(c *C) {
+	c.Log("start")
 	txn := s.begin(c)
 
 	k1 := []byte("k1")
@@ -241,9 +247,16 @@ func (s *testLab3Suite) preparePrewritedTxn(c *C, pk string, kvs map[string]stri
 			hasPk = true
 		}
 	}
+
 	c.Assert(hasPk, IsTrue)
 	committer, err := newTwoPhaseCommitterWithInit(txn, 0)
+	txn.us.WalkBuffer(func(k kv.Key, v []byte) error {
+		fmt.Print("k: ", k, "v: ", v, "; ")
+		return nil
+	})
+	fmt.Println()
 	committer.primaryKey = []byte(pk)
+	fmt.Println("committer.primaryKey: ", committer.primaryKey)
 	c.Assert(err, IsNil)
 	bo := NewBackoffer(context.Background(), PrewriteMaxBackoff)
 	err = committer.prewriteKeys(bo, keys)
@@ -470,6 +483,10 @@ func (s *testLab3Suite) TestGetResolveLockCommit(c *C) {
 
 	// tinysql will always use the latest ts to try resolving the lock
 	txn2 := s.beginWithStartTs(c, committer.commitTS+1)
+	fmt.Println(txn.us.WalkBuffer(func(k kv.Key, v []byte) error {
+		fmt.Println("txn2: k: ", k, " v:", v)
+		return nil
+	}))
 	val, err := txn2.Get(context.Background(), k2)
 	c.Assert(err, IsNil)
 	c.Assert(val, BytesEquals, []byte("b"))

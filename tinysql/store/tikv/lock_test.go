@@ -112,6 +112,7 @@ func (s *testLockSuite) TestScanLockResolveWithGet(c *C) {
 	for ch := byte('a'); ch <= byte('z'); ch++ {
 		v, err := txn.Get(context.TODO(), []byte{ch})
 		c.Assert(err, IsNil)
+		fmt.Println(v)
 		c.Assert(v, BytesEquals, []byte{ch})
 	}
 }

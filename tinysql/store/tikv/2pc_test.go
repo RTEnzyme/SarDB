@@ -15,6 +15,7 @@ package tikv
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"math/rand"
 	"strings"
@@ -70,6 +71,7 @@ func (s *testCommitterSuite) checkValues(c *C, m map[string]string) {
 	txn := s.begin(c)
 	for k, v := range m {
 		val, err := txn.Get(context.TODO(), []byte(k))
+		fmt.Println("k: ", k, " v: ", val)
 		c.Assert(err, IsNil)
 		c.Assert(string(val), Equals, v)
 	}
