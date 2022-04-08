@@ -115,10 +115,10 @@ func (cc *clientConn) String() string {
 // during handshake, client and server negotiate compatible features and do authentication.
 // After handshake, client can send sql query to server.
 func (cc *clientConn) handshake(ctx context.Context) error {
-	if err := cc.writeInitialHandshake(); err != nil {
+	if err := cc.writeInitialHandshake(); err != nil { // 写初始的握手数据
 		return err
 	}
-	if err := cc.readOptionalSSLRequestAndHandshakeResponse(ctx); err != nil {
+	if err := cc.readOptionalSSLRequestAndHandshakeResponse(ctx); err != nil { // 读SSL请求和握手回复
 		err1 := cc.writeError(err)
 		if err1 != nil {
 			logutil.Logger(ctx).Debug("writeError failed", zap.Error(err1))
@@ -534,6 +534,9 @@ func (cc *clientConn) PeerHost(hasPassword string) (host string, err error) {
 	return
 }
 
+// Run 读取客户端query和将查询结果写回给客户端在一个循环中，如果在处理中有一个panic，
+// 它将会被recovery并且记录这个log error
+// 这个函数返回或者连接关闭，当有一个IO错误或者有一个panic
 // Run reads client query and writes query result to client in for loop, if there is a panic during query handling,
 // it will be recovered and log the panic error.
 // This function returns and the connection is closed if there is an IO error or there is a panic.
@@ -541,7 +544,7 @@ func (cc *clientConn) Run(ctx context.Context) {
 	const size = 4096
 	defer func() {
 		r := recover()
-		if r != nil {
+		if r != nil { // 说明有panic
 			buf := make([]byte, size)
 			stackSize := runtime.Stack(buf, false)
 			buf = buf[:stackSize]
@@ -563,7 +566,7 @@ func (cc *clientConn) Run(ctx context.Context) {
 	// The client connection would detect the events when it fails to change status
 	// by CAS operation, it would then take some actions accordingly.
 	for {
-		if !atomic.CompareAndSwapInt32(&cc.status, connStatusDispatching, connStatusReading) {
+		if !atomic.CompareAndSwapInt32(&cc.status, connStatusDispatching, connStatusReading) { // 查看连接是否已经关闭
 			return
 		}
 
@@ -575,7 +578,7 @@ func (cc *clientConn) Run(ctx context.Context) {
 		data, err := cc.readPacket()
 		if err != nil {
 			if terror.ErrorNotEqual(err, io.EOF) {
-				if netErr, isNetErr := errors.Cause(err).(net.Error); isNetErr && netErr.Timeout() {
+				if netErr, isNetErr := errors.Cause(err).(net.Error); isNetErr && netErr.Timeout() { // 等待时间超时
 					idleTime := time.Since(start)
 					logutil.Logger(ctx).Info("read packet timeout, close this connection",
 						zap.Duration("idle", idleTime),
@@ -593,13 +596,14 @@ func (cc *clientConn) Run(ctx context.Context) {
 			return
 		}
 
-		if !atomic.CompareAndSwapInt32(&cc.status, connStatusReading, connStatusDispatching) {
+		if !atomic.CompareAndSwapInt32(&cc.status, connStatusReading, connStatusDispatching) { // 查看连接是否关闭
 			return
 		}
 
 		// Hint: step I.2
 		// YOUR CODE HERE (lab4)
-		panic("YOUR CODE HERE")
+		//panic("YOUR CODE HERE")
+		err = cc.dispatch(ctx, data)
 		if err != nil {
 			if terror.ErrorEqual(err, io.EOF) {
 
@@ -667,17 +671,17 @@ func errStrForLog(err error) string {
 // It also gets a token from server which is used to limit the concurrently handling clients.
 // The most frequently used command is ComQuery.
 func (cc *clientConn) dispatch(ctx context.Context, data []byte) error {
-	cc.lastPacket = data
-	cmd := data[0]
-	data = data[1:]
+	cc.lastPacket = data // 更新lastPacket
+	cmd := data[0]       // data的第一个字节代表着query的种类
+	data = data[1:]      // data第一个字节之后的数据为data
 	vars := cc.ctx.GetSessionVars()
 	atomic.StoreUint32(&vars.Killed, 0)
-	if cmd < mysql.ComEnd {
+	if cmd < mysql.ComEnd { // 如果第一个字节的值小于ComEnd，则说明是有效的cmd种类，在ctx中设定CommandValue
 		cc.ctx.SetCommandValue(cmd)
 	}
 
-	dataStr := string(hack.String(data))
-
+	dataStr := string(hack.String(data)) // converts slice to MutableString without copy. MutableString can be converted
+	//  to string without copy
 	switch cmd {
 	case mysql.ComSleep:
 		// TODO: According to mysql document, this command is supposed to be used only internally.
@@ -691,14 +695,15 @@ func (cc *clientConn) dispatch(ctx context.Context, data []byte) error {
 		// Input payload may end with byte '\0', we didn't find related mysql document about it, but mysql
 		// implementation accept that case. So trim the last '\0' here as if the payload an EOF string.
 		// See http://dev.mysql.com/doc/internals/en/com-query.html
-		if len(data) > 0 && data[len(data)-1] == 0 {
+		if len(data) > 0 && data[len(data)-1] == 0 { // 修理掉最后的'\0'
 			data = data[:len(data)-1]
 			dataStr = string(hack.String(data))
 		}
 		var err error
 		// Hint: step I.2
 		// YOUR CODE HERE (lab4)
-		panic("YOUR CODE HERE")
+		//panic("YOUR CODE HERE")
+		err = cc.handleQuery(ctx, dataStr)
 		return err
 	case mysql.ComPing:
 		return cc.writeOK()
@@ -828,7 +833,8 @@ func (cc *clientConn) handleQuery(ctx context.Context, sql string) (err error) {
 	var rss []ResultSet
 	// Hint: step I.3
 	// YOUR CODE HERE (lab4)
-	panic("YOUR CODE HERE")
+	//panic("YOUR CODE HERE")
+	rss, err = cc.ctx.Execute(ctx, sql)
 
 	if err != nil {
 		return err
@@ -946,9 +952,13 @@ func (cc *clientConn) writeChunks(ctx context.Context, rs ResultSet, binary bool
 		// Here server.tidbResultSet implements Next method.
 		// Hint: step I.4.4
 		// YOUR CODE HERE (lab4)
-		panic("YOUR CODE HERE")
+		req.Reset()
+		err = rs.Next(ctx, req)
 		if err != nil {
 			return err
+		}
+		if req.Sel() == nil {
+			break
 		}
 		if !gotColumnInfo {
 			// We need to call Next before we get columns.

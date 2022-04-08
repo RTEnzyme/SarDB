@@ -574,7 +574,7 @@ func (s *session) execute(ctx context.Context, sql string) (recordSets []sqlexec
 		return nil, err
 	}
 
-	charsetInfo, collation := s.sessionVars.GetCharsetInfo()
+	charsetInfo, collation := s.sessionVars.GetCharsetInfo() // 获取charset
 
 	// Step1: Compile query string to abstract syntax trees(ASTs).
 	parseStartTime := time.Now()
@@ -586,7 +586,9 @@ func (s *session) execute(ctx context.Context, sql string) (recordSets []sqlexec
 
 	// Hint: step I.3.1
 	// YOUR CODE HERE (lab4)
-	panic("YOUR CODE HERE")
+	//panic("YOUR CODE HERE")
+	// 将SQL字符串转化为一颗或者一些语法树
+	stmtNodes, warns, err = s.ParseSQL(ctx, sql, charsetInfo, collation)
 	if err != nil {
 		s.rollbackOnError(ctx)
 		logutil.Logger(ctx).Warn("parse SQL failed",
@@ -615,7 +617,9 @@ func (s *session) execute(ctx context.Context, sql string) (recordSets []sqlexec
 		var stmt *executor.ExecStmt
 		// Hint: step I.3.2
 		// YOUR CODE HERE (lab4)
-		panic("YOUR CODE HERE")
+		//panic("YOUR CODE HERE")
+		// 将一颗语法树进行优化，依次生成逻辑执行计划和物理执行计划
+		stmt, err = compiler.Compile(ctx, stmtNode)
 		if stmt != nil {
 			logutil.Logger(ctx).Debug("stmt", zap.String("sql", stmt.Text))
 		}
@@ -633,10 +637,12 @@ func (s *session) execute(ctx context.Context, sql string) (recordSets []sqlexec
 
 		// Hint: step I.3.3
 		// YOUR CODE HERE (lab4)
-		panic("YOUR CODE HERE")
+		//panic("YOUR CODE HERE")
+		recordSets, err = s.executeStatement(ctx, connID, stmtNode, stmt, recordSets, multiQuery)
 		if err != nil {
 			return nil, err
 		}
+
 	}
 
 	if s.sessionVars.ClientCapability&mysql.ClientMultiResults == 0 && len(recordSets) > 1 {
@@ -996,7 +1002,7 @@ func (s *session) loadCommonGlobalVariablesIfNeeded() error {
 	}
 
 	var err error
-	// Use GlobalVariableCache if TiDB just loaded global variables within 2 second ago.
+	// Use GlobalVariableCache(gvc) if TiDB just loaded global variables within 2 second ago.
 	// When a lot of connections connect to TiDB simultaneously, it can protect TiKV meta region from overload.
 	gvc := domain.GetDomain(s).GetGlobalVarsCache()
 	succ, rows, fields := gvc.Get()

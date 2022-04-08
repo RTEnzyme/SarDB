@@ -16,7 +16,6 @@ package tikv
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"github.com/pingcap/tidb/parser/terror"
 	"math"
 	"sync"
@@ -293,12 +292,12 @@ func (c *twoPhaseCommitter) doActionOnKeys(bo *Backoffer, action twoPhaseCommitA
 	for id, g := range groups {
 		batches = appendBatchBySize(batches, id, g, sizeFunc, txnCommitBatchSize)
 	}
-	fmt.Println("batches before commit: ", batches)
+	//fmt.Println("batches before commit: ", batches)
 
 	firstIsPrimary := bytes.Equal(keys[0], c.primary())
 	_, actionIsCommit := action.(actionCommit)
 	_, actionIsCleanup := action.(actionCleanup)
-	fmt.Println("firstIsPrimary", firstIsPrimary, "actionIsCommit", actionIsCommit, "actionIsCleanup", actionIsCleanup)
+	//fmt.Println("firstIsPrimary", firstIsPrimary, "actionIsCommit", actionIsCommit, "actionIsCleanup", actionIsCleanup)
 	if firstIsPrimary && (actionIsCommit || actionIsCleanup) {
 		// primary should be committed/cleanup first
 		err = c.doActionOnBatches(bo, action, batches[:1])
@@ -307,7 +306,7 @@ func (c *twoPhaseCommitter) doActionOnKeys(bo *Backoffer, action twoPhaseCommitA
 		}
 		batches = batches[1:]
 	}
-	fmt.Println("is action commit?", actionIsCommit, "batches: ", batches)
+	//fmt.Println("is action commit?", actionIsCommit, "batches: ", batches)
 	if actionIsCommit {
 		// Commit secondary batches in background goroutine to reduce latency.
 		// The backoffer instance is created outside of the goroutine to avoid
@@ -316,13 +315,13 @@ func (c *twoPhaseCommitter) doActionOnKeys(bo *Backoffer, action twoPhaseCommitA
 		secondaryBo := NewBackoffer(context.Background(), CommitMaxBackoff).WithVars(c.txn.vars)
 		go func() {
 			e := c.doActionOnBatches(secondaryBo, action, batches)
-			fmt.Println("start batch execute batches")
+			//fmt.Println("start batch execute batches")
 			if e != nil {
 				logutil.BgLogger().Debug("2PC async doActionOnBatches",
 					zap.Uint64("conn", c.connID),
 					zap.Stringer("action type", action),
 					zap.Error(e))
-				fmt.Println("2PC async doActionOnBatches err: ", err)
+				//fmt.Println("2PC async doActionOnBatches err: ", err)
 			}
 		}()
 	} else {
@@ -818,9 +817,9 @@ func (batchExe *batchExecutor) startWorker(exitCh chan struct{}, ch chan error, 
 					singleBatchBackoffer, singleBatchCancel = batchExe.backoffer.Fork()
 					defer singleBatchCancel()
 				}
-				fmt.Println("asynchronously exe batch: ", batch)
+				//fmt.Println("asynchronously exe batch: ", batch)
 				ch <- batchExe.action.handleSingleBatch(batchExe.committer, singleBatchBackoffer, batch)
-				fmt.Println(batch, "batch error: ", ch)
+				//fmt.Println(batch, "batch error: ", ch)
 			}()
 		} else {
 			logutil.Logger(batchExe.backoffer.ctx).Info("break startWorker",
@@ -854,7 +853,7 @@ func (batchExe *batchExecutor) process(batches []batchKeys) error {
 	// check results
 	for i := 0; i < len(batches); i++ {
 		if e := <-ch; e != nil {
-			fmt.Println("startWorkErr: ", e)
+			//fmt.Println("startWorkErr: ", e)
 			logutil.Logger(backoffer.ctx).Debug("2PC doActionOnBatches failed",
 				zap.Uint64("conn", batchExe.committer.connID),
 				zap.Stringer("action type", batchExe.action),

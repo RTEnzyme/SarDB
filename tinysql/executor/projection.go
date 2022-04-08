@@ -197,7 +197,10 @@ func (e *ProjectionExec) parallelExecute(ctx context.Context, chk *chunk.Chunk) 
 	// Get the output from fetcher
 	// Hint: step III.3.1
 	// YOUR CODE HERE (lab4)
-	panic("YOUR CODE HERE")
+	// 外部线程不停的调用ProjectionExec.Next获取处理完成的数据，并在并行处理时调用
+	// ProjectionExec.parallelExecute. 该函数会从ProjectionExecute.outputCh中拿到数据
+	// 并通过Chunk.SwapColumns将数据写入外部传入的Chunk中
+	output = <-e.outputCh
 	if !ok {
 		return nil
 	}
@@ -341,7 +344,7 @@ func (f *projectionInputFetcher) run(ctx context.Context) {
 		// Send processed output to global output
 		// Hint: step III.3.2
 		// YOUR CODE HERE (lab4)
-		panic("YOUR CODE HERE")
+		f.outputCh <- output
 
 		requiredRows := atomic.LoadInt64(&f.proj.parentReqRows)
 		input.chk.SetRequiredRows(int(requiredRows), f.proj.maxChunkSize)
@@ -354,7 +357,8 @@ func (f *projectionInputFetcher) run(ctx context.Context) {
 		// Give the input and output back to worker
 		// Hint: step III.3.2
 		// YOUR CODE HERE (lab4)
-		panic("YOUR CODE HERE")
+		targetWorker.inputCh <- input
+		targetWorker.outputCh <- output
 	}
 }
 
@@ -398,7 +402,7 @@ func (w *projectionWorker) run(ctx context.Context) {
 		// Get input data
 		// Hint: step III.3.3
 		// YOUR CODE HERE (lab4)
-		panic("YOUR CODE HERE")
+		input = <-w.inputCh
 		if input == nil {
 			return
 		}
@@ -406,7 +410,7 @@ func (w *projectionWorker) run(ctx context.Context) {
 		// Get output data
 		// Hint: step III.3.3
 		// YOUR CODE HERE (lab4)
-		panic("YOUR CODE HERE")
+		output = <-w.outputCh
 		if output == nil {
 			return
 		}
@@ -423,7 +427,7 @@ func (w *projectionWorker) run(ctx context.Context) {
 		// Give the input channel back
 		// Hint: step III.3.3
 		// YOUR CODE HERE (lab4)
-		panic("YOUR CODE HERE")
+		w.inputGiveBackCh <- input
 	}
 }
 
