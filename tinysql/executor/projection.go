@@ -200,7 +200,7 @@ func (e *ProjectionExec) parallelExecute(ctx context.Context, chk *chunk.Chunk) 
 	// 外部线程不停的调用ProjectionExec.Next获取处理完成的数据，并在并行处理时调用
 	// ProjectionExec.parallelExecute. 该函数会从ProjectionExecute.outputCh中拿到数据
 	// 并通过Chunk.SwapColumns将数据写入外部传入的Chunk中
-	output = <-e.outputCh
+	output, ok = <-e.outputCh // error: 需要判断是否存在
 	if !ok {
 		return nil
 	}
@@ -344,7 +344,8 @@ func (f *projectionInputFetcher) run(ctx context.Context) {
 		// Send processed output to global output
 		// Hint: step III.3.2
 		// YOUR CODE HERE (lab4)
-		f.outputCh <- output
+		// error: f.outputCh <- output
+		f.globalOutputCh <- output
 
 		requiredRows := atomic.LoadInt64(&f.proj.parentReqRows)
 		input.chk.SetRequiredRows(int(requiredRows), f.proj.maxChunkSize)
@@ -396,13 +397,14 @@ func (w *projectionWorker) run(ctx context.Context) {
 	}()
 	for {
 		var (
-			input  *projectionInput
-			output *projectionOutput
+			input *projectionInput
+			//output *projectionOutput
 		)
 		// Get input data
 		// Hint: step III.3.3
 		// YOUR CODE HERE (lab4)
-		input = <-w.inputCh
+		// error: input = <-w.inputCh
+		input = readProjectionInput(w.inputCh, w.globalFinishCh)
 		if input == nil {
 			return
 		}
@@ -410,7 +412,7 @@ func (w *projectionWorker) run(ctx context.Context) {
 		// Get output data
 		// Hint: step III.3.3
 		// YOUR CODE HERE (lab4)
-		output = <-w.outputCh
+		output = readProjectionOutput(w.outputCh, w.globalFinishCh)
 		if output == nil {
 			return
 		}
