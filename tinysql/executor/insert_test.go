@@ -69,3 +69,10 @@ func (s *testSuite3) TestAllocateContinuousRowID(c *C) {
 	}
 	wg.Wait()
 }
+
+func (s *testSuite3) TestInsertTimeStamp(c *C) {
+	tk := testkit.NewTestKit(c, s.store)
+	tk.MustExec(`use test`)
+	tk.MustExec(`create table t1 (a int,b int, c timestamp);`)
+	fmt.Println(tk.MustQuery(`insert into t1 values (1, 2, ` + `"2018-01-01 03:00:01"` + `)`).Rows())
+}

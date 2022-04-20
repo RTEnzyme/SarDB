@@ -509,7 +509,8 @@ func (d *Datum) ConvertTo(sc *stmtctx.StatementContext, target *FieldType) (Datu
 	case mysql.TypeNull:
 		return Datum{}, nil
 	default:
-		panic("should never happen")
+
+		panic(fmt.Sprintf("target.tp = %d should never happen", target.Tp))
 	}
 }
 

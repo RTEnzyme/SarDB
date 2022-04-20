@@ -149,11 +149,11 @@ func (s *tikvSnapshot) get(bo *Backoffer, k kv.Key) ([]byte, error) {
 			//   2. The transaction is dead with some locks left, resolve it.
 			// YOUR CODE HERE (lab3).
 			//panic("YOUR CODE HERE")
-			loc, err := extractLockFromKeyErr(keyErr)
+			lock, err := extractLockFromKeyErr(keyErr)
 			if err != nil {
 				return nil, errors.Trace(err)
 			}
-			msBeforeExpired, err := cli.ResolveLocks(bo, s.version.Ver, []*Lock{loc})
+			msBeforeExpired, err := cli.ResolveLocks(bo, s.version.Ver, []*Lock{lock})
 			if err != nil {
 				return nil, errors.Trace(err)
 			}

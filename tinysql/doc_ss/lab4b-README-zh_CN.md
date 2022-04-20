@@ -21,3 +21,4 @@ insert into t(id, val) select id + 1, val + 1 from t; -- insert from select
 - 5\. `executor/insert_common.go`，`InsertValues.addRecord` 会将输入的一行数据通过 `table/tables/tables.go` 中的 `TableCommon.AddRecord` 函数写入到 membuffer 当中。
 
 以上是写入的关键路径，这个调用链路中的关键函数也被移除了，你需要根据调用链路的描述进行填充。
+

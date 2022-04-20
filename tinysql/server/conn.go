@@ -952,14 +952,11 @@ func (cc *clientConn) writeChunks(ctx context.Context, rs ResultSet, binary bool
 		// Here server.tidbResultSet implements Next method.
 		// Hint: step I.4.4
 		// YOUR CODE HERE (lab4)
-		req.Reset()
 		err = rs.Next(ctx, req)
 		if err != nil {
 			return err
 		}
-		if req.Sel() == nil {
-			break
-		}
+
 		if !gotColumnInfo {
 			// We need to call Next before we get columns.
 			// Otherwise, we will get incorrect columns info.
