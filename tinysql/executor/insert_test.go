@@ -82,3 +82,13 @@ func (s *testSuite3) TestInsertTimeStamp(c *C) {
 	//tk.MustExec(`insert into t1(a, b) values (1, 2)`)
 	fmt.Println("res: ", tk.MustQuery(`select a, b, c from t1`).Rows())
 }
+
+func (s *testSuite3) TestInsertDatetime(c *C) {
+	tk := testkit.NewTestKit(c, s.store)
+	tk.MustExec("use test")
+	tk.MustExec(`create table t1 (a int, b int, c datetime);`)
+	tk.MustExec(`insert into t1(a, b, c) values (1, 1, "2018-01-01 03:00:00")`)
+	tk.MustExec(`insert into t1(a, b, c) values (2, 2, "2018-01-01 03:00:00")`)
+	tk.MustExec(`insert into t1(a, b, c) values (3, 3, "2018-01-01 03:00:00")`)
+	fmt.Println("res: ", tk.MustQuery(`select a, b, c from t1`))
+}

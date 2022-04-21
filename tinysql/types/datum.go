@@ -509,7 +509,7 @@ func (d *Datum) ConvertTo(sc *stmtctx.StatementContext, target *FieldType) (Datu
 		return d.convertToMysqlBit(sc, target)
 	case mysql.TypeNull:
 		return Datum{}, nil
-	case mysql.TypeTimestamp:
+	case mysql.TypeTimestamp, mysql.TypeDatetime:
 		return d.convertToTimeStamp(sc, target)
 	default:
 		panic(fmt.Sprintf("target.tp = %d should never happen", target.Tp))

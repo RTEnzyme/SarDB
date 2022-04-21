@@ -42,6 +42,7 @@ const (
 	varintFlag       byte = 8
 	uvarintFlag      byte = 9
 	jsonFlag         byte = 10
+	datetimeFlag     byte = 11
 	maxFlag          byte = 250
 )
 
@@ -630,6 +631,9 @@ func (decoder *Decoder) DecodeOne(b []byte, colIdx int, ft *types.FieldType) (re
 	}
 	chk := decoder.chk
 	flag := b[0]
+	if ft.Tp == mysql.TypeDatetime {
+		flag = datetimeFlag
+	}
 	b = b[1:]
 	switch flag {
 	case intFlag:
@@ -659,7 +663,7 @@ func (decoder *Decoder) DecodeOne(b []byte, colIdx int, ft *types.FieldType) (re
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
-		fmt.Println("uvarintFlag: ", b, v)
+		//fmt.Println("uvarintFlag: ", b, v)
 		err = appendUintToChunk(v, chk, colIdx, ft, decoder.timezone)
 	case floatFlag:
 		var v float64
@@ -683,6 +687,11 @@ func (decoder *Decoder) DecodeOne(b []byte, colIdx int, ft *types.FieldType) (re
 		chk.AppendBytes(colIdx, v)
 	case NilFlag:
 		chk.AppendNull(colIdx)
+	case datetimeFlag:
+		var v uint64
+		b, v, err = DecodeUvarint(b)
+		fmt.Println("datetime: ", v)
+		chk.AppendString(colIdx, time.Unix(int64(v), 0).Format("2006-01-01 01:01"))
 	default:
 		return nil, errors.Errorf("invalid encoded key flag %v", flag)
 	}
