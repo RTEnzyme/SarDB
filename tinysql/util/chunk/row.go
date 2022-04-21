@@ -90,7 +90,7 @@ func (r Row) GetDatumRow(fields []*types.FieldType) []types.Datum {
 func (r Row) GetDatum(colIdx int, tp *types.FieldType) types.Datum {
 	var d types.Datum
 	switch tp.Tp {
-	case mysql.TypeTiny, mysql.TypeShort, mysql.TypeInt24, mysql.TypeLong, mysql.TypeLonglong:
+	case mysql.TypeTiny, mysql.TypeShort, mysql.TypeInt24, mysql.TypeLong, mysql.TypeLonglong, mysql.TypeTimestamp:
 		if !r.IsNull(colIdx) {
 			if mysql.HasUnsignedFlag(tp.Flag) {
 				d.SetUint64(r.GetUint64(colIdx))

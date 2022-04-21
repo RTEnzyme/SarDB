@@ -659,6 +659,7 @@ func (decoder *Decoder) DecodeOne(b []byte, colIdx int, ft *types.FieldType) (re
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
+		fmt.Println("uvarintFlag: ", b, v)
 		err = appendUintToChunk(v, chk, colIdx, ft, decoder.timezone)
 	case floatFlag:
 		var v float64

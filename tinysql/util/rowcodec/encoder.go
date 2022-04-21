@@ -169,6 +169,9 @@ func EncodeValueDatum(sc *stmtctx.StatementContext, d types.Datum, buffer []byte
 	switch d.Kind() {
 	case types.KindInt64:
 		buffer = encodeInt(buffer, d.GetInt64())
+	case types.KindMysqlTime:
+		buffer = encodeInt(buffer, d.GetInt64())
+		//fmt.Println("encodeRow: ", buffer)
 	case types.KindUint64:
 		buffer = encodeUint(buffer, d.GetUint64())
 	case types.KindString, types.KindBytes:

@@ -19,6 +19,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	"github.com/pingcap/errors"
@@ -508,8 +509,9 @@ func (d *Datum) ConvertTo(sc *stmtctx.StatementContext, target *FieldType) (Datu
 		return d.convertToMysqlBit(sc, target)
 	case mysql.TypeNull:
 		return Datum{}, nil
+	case mysql.TypeTimestamp:
+		return d.convertToTimeStamp(sc, target)
 	default:
-
 		panic(fmt.Sprintf("target.tp = %d should never happen", target.Tp))
 	}
 }
@@ -564,6 +566,52 @@ func ProduceFloatWithSpecifiedTp(f float64, target *FieldType, sc *stmtctx.State
 		return 0, overflow(f, target.Tp)
 	}
 	return f, nil
+}
+
+func (d *Datum) convertToTimeStamp(sc *stmtctx.StatementContext, target *FieldType) (Datum, error) {
+	var layouts = []string{"2006-01-02 15:04:05", "2006-01-01 15:04"}
+	var ret Datum
+	switch d.k {
+	case KindString:
+		var err error
+		for _, layout := range layouts {
+			var stamp time.Time
+			stamp, err = time.ParseInLocation(layout, d.GetString(), time.Local)
+			if err != nil {
+				continue
+			}
+			ret.k = KindMysqlTime
+			ret.i = stamp.Unix()
+			break
+		}
+		if err != nil {
+			return invalidConv(d, target.Tp)
+		}
+	default:
+		return invalidConv(d, target.Tp)
+	}
+	return ret, nil
+	//var (
+	//	ret Datum
+	//	t   Time
+	//	err error
+	//)
+	//fsp := DefaultFsp
+	//if target.Decimal != UnspecifiedLength {
+	//	fsp = target.Decimal
+	//}
+	//switch d.k {
+	//case KindString, KindBytes:
+	//	t, err = ParseTime(sc, d.GetString(), mysql.TypeTimestamp, fsp)
+	//default:
+	//	return invalidConv(d, mysql.TypeTimestamp)
+	//}
+	//t.SetType(mysql.TypeTimestamp)
+	//ret.SetMysqlTime(t)
+	//if err != nil {
+	//	return ret, errors.Trace(err)
+	//}
+	//return ret, nil
 }
 
 func (d *Datum) convertToString(sc *stmtctx.StatementContext, target *FieldType) (Datum, error) {

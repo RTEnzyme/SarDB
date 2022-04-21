@@ -167,6 +167,7 @@ func CastValue(ctx sessionctx.Context, val types.Datum, col *model.ColumnInfo) (
 		return casted, nil
 	}
 	str := casted.GetString()
+
 	utf8Charset := col.Charset == mysql.UTF8Charset
 	for i, w := 0, 0; i < len(str); i += w {
 		runeValue, width := utf8.DecodeRuneInString(str[i:])

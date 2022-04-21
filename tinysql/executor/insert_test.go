@@ -73,6 +73,12 @@ func (s *testSuite3) TestAllocateContinuousRowID(c *C) {
 func (s *testSuite3) TestInsertTimeStamp(c *C) {
 	tk := testkit.NewTestKit(c, s.store)
 	tk.MustExec(`use test`)
-	tk.MustExec(`create table t1 (a int,b int, c timestamp);`)
-	fmt.Println(tk.MustQuery(`insert into t1 values (1, 2, ` + `"2018-01-01 03:00:01"` + `)`).Rows())
+	//tk.MustExec(`create table t1 (a int,b int);`)
+	tk.MustExec(`create table t1 (a int,b int, c TIMESTAMP);`)
+	//fmt.Println(tk.MustQuery("show tables").ows())
+	tk.MustExec(`insert into t1(a, b, c) values (1, 2, ` + `"2018-01-01 03:00:01"` + `)`)
+	tk.MustExec(`insert into t1(a, b, c) values (1, 2, ` + `"2022-05-01 03:00:01"` + `)`)
+	tk.MustExec(`insert into t1(a, b, c) values (3, 3, ` + `"2022-05-01 03:00"` + `)`)
+	//tk.MustExec(`insert into t1(a, b) values (1, 2)`)
+	fmt.Println("res: ", tk.MustQuery(`select a, b, c from t1`).Rows())
 }
