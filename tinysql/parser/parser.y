@@ -362,6 +362,7 @@ import (
 	indexes		"INDEXES"
 	invisible	"INVISIBLE"
 	invoker		"INVOKER"
+	inverted    "INVERTED"
 	io		"IO"
 	ipc		"IPC"
 	jsonType	"JSON"
@@ -1838,7 +1839,7 @@ NumLiteral:
  *   | {VISIBLE | INVISIBLE}
  *
  * index_type:
- *     USING {BTREE | HASH}
+ *     USING {BTREE | HASH | INVERTED}
  *
  * algorithm_option:
  *     ALGORITHM [=] {DEFAULT | INPLACE | COPY}
@@ -2621,6 +2622,10 @@ IndexTypeName:
  	{
  		$$ = model.IndexTypeRtree
  	}
+ |  "INVERTED"
+    {
+        $$ = model.IndexTypeInverted
+    }
 
 IndexInvisible:
 	"VISIBLE"
@@ -2637,7 +2642,7 @@ Identifier:
 identifier | UnReservedKeyword | NotKeywordToken | TiDBKeyword
 
 UnReservedKeyword:
- "ACTION" | "ADVISE" |"ASCII" | "AUTO_INCREMENT" | "AFTER" | "ALWAYS" | "AVG" | "BEGIN" | "BIT" | "BOOL" | "BOOLEAN" | "BTREE" | "BYTE" | "CAPTURE" |"CLEANUP" | "CHARSET"
+ "ACTION" | "ADVISE" |"ASCII" | "AUTO_INCREMENT" | "AFTER" | "ALWAYS" | "AVG" | "BEGIN" | "BIT" | "BOOL" | "BOOLEAN" | "BTREE" | "BYTE" | "CAPTURE" |"CLEANUP" | "CHARSET" | "INVERTED"
 | "COLUMNS" | "COMMIT" | "COMPACT" | "COMPRESSED" | "CONSISTENT" | "CURRENT" | "DATA" | "DATE" %prec lowerThanStringLitToken| "DATETIME" | "DAY" | "DEALLOCATE" | "DO" | "DUPLICATE"
 | "DYNAMIC" | "ENCRYPTION" | "END" | "ENFORCED" | "ENGINE" | "ENGINES" | "ENUM" | "ERRORS" | "ESCAPE" | "EVOLVE" | "EXECUTE" | "EXTENDED" | "FIELDS" | "FIRST" | "FIXED" | "FLUSH" | "FOLLOWING" | "FORMAT" | "FULL" |"GLOBAL"
 | "HASH" | "HOUR" | "INSERT_METHOD" | "LESS" | "LOCAL" | "LAST" | "NAMES" | "OFFSET" | "PASSWORD" %prec lowerThanEq | "PREPARE" | "QUICK" | "REBUILD" | "REDUNDANT" | "REORGANIZE"

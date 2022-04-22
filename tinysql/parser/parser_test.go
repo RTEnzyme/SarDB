@@ -15,6 +15,7 @@ package parser_test
 
 import (
 	"fmt"
+	"github.com/stretchr/testify/assert"
 	"runtime"
 	"strings"
 	"testing"
@@ -1491,4 +1492,26 @@ func (s *testParserSuite) TestQuotedVariableColumnName(c *C) {
 	for i, field := range ss.Fields.Fields {
 		c.Assert(field.Text(), Equals, expected[i])
 	}
+}
+
+//func (s *testParserSuite) TestInveredIndex(c *C) {
+//	//parser := parser.New()
+//	//table := []testCase{{`create table t (c int, index ci (c) USING BTREE COMMENT "123");`, true, "CREATE TABLE `t` (`c` INT,INDEX `ci`(`c`) USING INVERTED COMMENT '123')"}}
+//	sql := "CREATE TABLE `t` (`c` INT,INDEX `ci`(`c`) USING HASH COMMENT '123')"
+//	//s.RunTest(c, table)
+//	psr := parser.New()
+//	stmt, err := psr.ParseOneStmt(sql, "", "")
+//	fmt.Println(err)
+//	c.Assert(err, IsNil)
+//	fmt.Println(stmt)
+//}
+
+func TestInvertedIndex(t *testing.T) {
+	sql := "CREATE TABLE `t` (`c` INT,INDEX `ci`(`c`) USING INVERTED COMMENT '123')"
+	//s.RunTest(c, table)
+	psr := parser.New()
+	stmt, err := psr.ParseOneStmt(sql, "", "")
+	fmt.Println(err)
+	assert.Nil(t, err)
+	fmt.Println(stmt)
 }

@@ -384,6 +384,7 @@ var tokenMap = map[string]int{
 	"INTO":                     into,
 	"INVISIBLE":                invisible,
 	"INVOKER":                  invoker,
+	"INVERTED":                 inverted,
 	"IS":                       is,
 	"ISSUER":                   issuer,
 	"ISOLATION":                isolation,

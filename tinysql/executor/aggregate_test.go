@@ -42,7 +42,7 @@ func (s *testSuiteAgg) TestSelectDistinct(c *C) {
 	s.fillData(tk, "select_distinct_test")
 
 	tk.MustExec("begin")
-	r := tk.MustQuery("select distinct name from select_distinct_test;")
+	r := tk.MustQuery("select test(name) from select_distinct_test;")
 	r.Check(testkit.Rows("hello"))
 	tk.MustExec("commit")
 
