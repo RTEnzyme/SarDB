@@ -247,3 +247,44 @@ func (s *testIndexSuite) TestCombineIndexSeek(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(h, Equals, int64(1))
 }
+
+func (s *testIndexSuite) TestInvertedIndex(c *C) {
+	tblInfo := &model.TableInfo{
+		ID: 1,
+		Indices: []*model.IndexInfo{
+			{
+				ID:   2,
+				Name: model.NewCIStr("test"),
+				Columns: []*model.IndexColumn{
+					{Offset: 1},
+					{Offset: 2},
+				},
+				Tp: model.IndexTypeInverted,
+			},
+		},
+		Columns: []*model.ColumnInfo{
+			{Offset: 0},
+			{Offset: 1},
+			{Offset: 2},
+		},
+	}
+	index := tables.NewIndex(tblInfo.ID, tblInfo, tblInfo.Indices[0])
+
+	txn, err := s.s.Begin()
+	c.Assert(err, IsNil)
+
+	mockCtx := mock.NewContext()
+	values := types.MakeDatums("abc", "def")
+	_, err = index.Create(mockCtx, txn, values, 1)
+	c.Assert(err, IsNil)
+
+	index2 := tables.NewIndex(tblInfo.ID, tblInfo, tblInfo.Indices[0])
+	sc := &stmtctx.StatementContext{TimeZone: time.Local}
+	iter, hit, err := index2.Seek(sc, txn, types.MakeDatums("abc", nil))
+	c.Assert(err, IsNil)
+	defer iter.Close()
+	c.Assert(hit, IsFalse)
+	_, h, err := iter.Next()
+	c.Assert(err, IsNil)
+	c.Assert(h, Equals, int64(1))
+}

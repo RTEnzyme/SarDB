@@ -101,13 +101,20 @@ type index struct {
 
 // NewIndex builds a new Index object.
 func NewIndex(physicalID int64, tblInfo *model.TableInfo, indexInfo *model.IndexInfo) table.Index {
-	index := &index{
+	if indexInfo.Tp == model.IndexTypeInverted {
+		return &invertedIndex{
+			idxInfo: indexInfo,
+			tblInfo: tblInfo,
+			prefix:  tablecodec.EncodeTableIndexPrefix(physicalID, indexInfo.ID),
+		}
+	}
+	return &index{
 		idxInfo: indexInfo,
 		tblInfo: tblInfo,
 		// The prefix can't encode from tblInfo.ID, because table partition may change the id to partition id.
 		prefix: tablecodec.EncodeTableIndexPrefix(physicalID, indexInfo.ID),
 	}
-	return index
+
 }
 
 // Meta returns index info.
@@ -372,4 +379,135 @@ func (c *index) FetchValues(r []types.Datum, vals []types.Datum) ([]types.Datum,
 		vals[i] = r[ic.Offset]
 	}
 	return vals, nil
+}
+
+type invertedIndex struct {
+	idxInfo *model.IndexInfo
+	tblInfo *model.TableInfo
+	prefix  kv.Key
+}
+
+func (idx *invertedIndex) Meta() *model.IndexInfo {
+	return idx.idxInfo
+}
+
+// Create creates many new entry int the kvIndex data
+func (idx *invertedIndex) Create(sctx sessionctx.Context, rm kv.RetrieverMutator, indexedValues []types.Datum, h int64, opts ...table.CreateIdxOptFunc) (int64, error) {
+	var opt table.CreateIdxOpt
+	for _, fn := range opts {
+		fn(&opt)
+	}
+	vars := sctx.GetSessionVars()
+	writeBufs := vars.GetWriteStmtBufs()
+	indexedValues[0].SetString("abc")
+	//skipCheck := vars.StmtCtx.BatchCheck
+	key, _, err := idx.GenIndexKey(vars.StmtCtx, indexedValues, h, writeBufs.IndexKeyBuf)
+	if err != nil {
+		return 0, err
+	}
+	//ctx := opt.Ctx
+	//if opt.Untouched {
+	//	txn, err1 := sctx.Txn(true)
+	//	if err1 != nil {
+	//		return 0, err1
+	//	}
+	//	_, err = txn.GetMemBuffer().Get(ctx, key)
+	//	if err == nil {
+	//		return 0, nil
+	//	}
+	//}
+	writeBufs.IndexKeyBuf = key
+	value := []byte{'0'}
+	err = rm.Set(key, value)
+	return 0, nil
+}
+
+func (idx *invertedIndex) Delete(sc *stmtctx.StatementContext, m kv.Mutator, indexedValues []types.Datum, h int64) error {
+	key, _, err := idx.GenIndexKey(sc, indexedValues, h, nil)
+	if err != nil {
+		return err
+	}
+	err = m.Delete(key)
+	return err
+}
+
+func (idx *invertedIndex) Drop(rm kv.RetrieverMutator) error {
+	it, err := rm.Iter(idx.prefix, idx.prefix.PrefixNext())
+	if err != nil {
+		return err
+	}
+	defer it.Close()
+	for it.Valid() {
+		if !it.Key().HasPrefix(idx.prefix) {
+			break
+		}
+		err := rm.Delete(it.Key())
+		if err != nil {
+			return err
+		}
+		err = it.Next()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (idx *invertedIndex) Exist(sc *stmtctx.StatementContext, rm kv.RetrieverMutator, indexedValues []types.Datum, h int64) (bool, int64, error) {
+	return false, 0, nil
+}
+
+func (idx *invertedIndex) GenIndexKey(sc *stmtctx.StatementContext, indexedValues []types.Datum, h int64, buf []byte) (key []byte, distinct bool, err error) {
+	if buf != nil {
+		buf = buf[:0]
+	}
+
+	key = make([]byte, 0, len(idx.prefix)+len(indexedValues)*9+9)
+	key = append(key, []byte(idx.prefix)...)
+	key, err = codec.EncodeKey(sc, key, indexedValues...)
+	if err == nil {
+		key, err = codec.EncodeKey(sc, key, types.NewDatum(h))
+	}
+	return key, false, err
+}
+
+func (idx *invertedIndex) Seek(sc *stmtctx.StatementContext, r kv.Retriever, indexedValues []types.Datum) (iter table.IndexIterator, hit bool, err error) {
+	key, _, err := idx.GenIndexKey(sc, indexedValues, 0, nil)
+	if err != nil {
+		return nil, false, err
+	}
+	upperBound := idx.prefix.PrefixNext()
+	it, err := r.Iter(idx.prefix, upperBound)
+	if err != nil {
+		return nil, false, err
+	}
+	hit = false
+	if it.Valid() && it.Key().Cmp(key) == 0 {
+		hit = true
+	}
+	return &indexIter{it: it, idx: (*index)(idx), prefix: idx.prefix}, hit, nil
+}
+
+func (idx *invertedIndex) SeekFirst(r kv.Retriever) (iter table.IndexIterator, err error) {
+	upperBound := idx.prefix.PrefixNext()
+	it, err := r.Iter(idx.prefix, upperBound)
+	if err != nil {
+		return nil, err
+	}
+	return &indexIter{it: it, idx: (*index)(idx), prefix: idx.prefix}, nil
+}
+
+func (idx *invertedIndex) FetchValues(row []types.Datum, columns []types.Datum) ([]types.Datum, error) {
+	needLength := len(idx.idxInfo.Columns)
+	if columns == nil || cap(columns) < needLength {
+		columns = make([]types.Datum, needLength)
+	}
+	columns = columns[:needLength]
+	for i, ic := range idx.idxInfo.Columns {
+		if ic.Offset < 0 || ic.Offset >= len(row) {
+			return nil, table.ErrIndexOutBound.GenWithStackByArgs(ic.Name, ic.Offset, row)
+		}
+		columns[i] = row[ic.Offset]
+	}
+	return columns, nil
 }

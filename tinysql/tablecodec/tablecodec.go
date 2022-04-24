@@ -441,7 +441,7 @@ func DecodeIndexKV(key, value []byte, colsLen int, pkStatus PrimaryKeyStatus) ([
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	if len(b) > 0 {
+	if len(b) > 0 { // non-unique index value
 		if pkStatus != PrimaryKeyNotExists {
 			values = append(values, b)
 		}

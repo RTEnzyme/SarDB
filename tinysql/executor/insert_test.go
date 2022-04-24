@@ -92,3 +92,22 @@ func (s *testSuite3) TestInsertDatetime(c *C) {
 	tk.MustExec(`insert into t1(a, b, c) values (3, 3, "2018-01-01 03:00:00")`)
 	fmt.Println("res: ", tk.MustQuery(`select a, b, c from t1`))
 }
+
+func (s *testSuite3) TestInsertLongText(c *C) {
+	tk := testkit.NewTestKit(c, s.store)
+	tk.MustExec("use test")
+	tk.MustExec("create table t1 (a int, b int, c longtext);")
+	tk.MustExec("insert into t1(a, b, c) values (1, 1, '123456')")
+	tk.MustExec("insert into t1(a, b, c) values (1, 1, '123')")
+	tk.MustExec("insert into t1(a, b, c) values (3, 3, '123')")
+	fmt.Println("res: ", tk.MustQuery(`select a, b, c from t1 where c = '123456'`))
+}
+
+func (s *testSuite3) TestInvertedIndex(c *C) {
+	tk := testkit.NewTestKit(c, s.store)
+	tk.MustExec("use test")
+	tk.MustExec("create table t1 (a int, b varchar(256), Index b1(b) USING INVERTED)")
+	tk.MustExec("insert into t1(a, b) values(1, 'bcd')")
+	tk.MustExec("insert into t1(a, b) values(2, 'efg')")
+	fmt.Println("res: ", tk.MustQuery(`select a, b from t1 where b in ('abc')`))
+}

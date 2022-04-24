@@ -1150,6 +1150,17 @@ func (s *testSuite) TestLimit(c *C) {
 	))
 }
 
+func (s *testSuite3) TestVarCharIndex(c *C) {
+	tk := testkit.NewTestKit(c, s.store)
+	tk.MustExec("use test")
+	tk.MustExec("create table `t1` (`a` int, `b` varchar(255), INDEX `b1`(`b`) USING INVERTED COMMENT '123');")
+	//tk.MustExec("CREATE TABLE `t` (`c` INT,INDEX `ci`(`c`) USING INVERTED COMMENT '123')")
+	tk.MustExec(`insert into t1(a, b) values (1, "2018-01-01 03:00:00")`)
+	tk.MustExec(`insert into t1(a, b) values (2, "2018-01-01 03:00:00")`)
+	tk.MustExec(`insert into t1(a, b) values (3, "2018-01-01 03:00:00")`)
+	fmt.Println("res: ", tk.MustQuery(`select a, b from t1`))
+}
+
 type testSuite2 struct {
 	*baseTestSuite
 }
