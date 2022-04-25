@@ -53,6 +53,7 @@ const (
 	GetVar      = "getvar"
 	Values      = "values"
 	Cutl        = "cutl"
+	BM25CMP     = "bm25cmp"
 )
 
 // FuncCallExpr is for function expression.

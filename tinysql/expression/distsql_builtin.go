@@ -139,6 +139,8 @@ func getSignatureByPB(ctx sessionctx.Context, sigCode tipb.ScalarFuncSig, tp *ti
 		f = &builtinLengthSig{base}
 	case tipb.ScalarFuncSig_Strcmp:
 		f = &builtinStrcmpSig{base}
+	case 1103:
+		f = &builtinStrCmpBM25Score{base}
 
 	default:
 		e = errFunctionNotExists.GenWithStackByArgs("FUNCTION", sigCode)

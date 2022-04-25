@@ -121,3 +121,13 @@ func (s *testSuite3) TestFuncCutl(c *C) {
 	tk.MustExec("insert into t1(a, b) values(2, 'hig')")
 	fmt.Println("res: ", tk.MustQuery(`select a, b from t1 where b search_cutl('bcd')`))
 }
+
+func (s *testSuite3) TestOrderItemFunc(c *C) {
+	tk := testkit.NewTestKit(c, s.store)
+	tk.MustExec("use test")
+	tk.MustExec("create table t1 (a varchar(256), b varchar(256))")
+	tk.MustExec("insert into t1(a, b) values('1236', 'bcd')")
+	tk.MustExec("insert into t1(a, b) values('123', 'efg')")
+	tk.MustExec("insert into t1(a, b) values('12345', 'hig')")
+	fmt.Println("res: ", tk.MustQuery("select a, b from t1 where b cutl('bcd') order by BM25CMP(b, 'f') desc limit 1"))
+}

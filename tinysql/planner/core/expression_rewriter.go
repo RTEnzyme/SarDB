@@ -550,14 +550,6 @@ func (er *expressionRewriter) cutlToExpression(lLen int, not bool, tp *types.Fie
 	eqFunctions = append(eqFunctions, expr)
 	cut1.Value.SetString("hig")
 	expr2, _ := er.constructBinaryOpFunction(args[0], cut1, ast.EQ)
-	//for i := stkLen - lLen; i < stkLen; i++ {
-	//	expr, err := er.constructBinaryOpFunction(args[0], er.ctxStack[i], ast.EQ)
-	//	if err != nil {
-	//		er.err = err
-	//		return
-	//	}
-	//	eqFunctions = append(eqFunctions, expr)
-	//}
 	eqFunctions = append(eqFunctions, expr2)
 	function = expression.ComposeDNFCondition(er.sctx, eqFunctions...)
 

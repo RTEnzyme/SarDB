@@ -33,6 +33,7 @@ var (
 var (
 	_ builtinFunc = &builtinLengthSig{}
 	_ builtinFunc = &builtinStrcmpSig{}
+	_ builtinFunc = &builtinStrCmpBM25Score{}
 )
 
 // SetBinFlagOrBinStr sets resTp to binary string if argTp is a binary string,
@@ -115,6 +116,50 @@ func (b *builtinStrcmpSig) evalInt(row chunk.Row) (int64, bool, error) {
 		err         error
 	)
 
+	left, isNull, err = b.args[0].EvalString(b.ctx, row)
+	if isNull || err != nil {
+		return 0, isNull, err
+	}
+	right, isNull, err = b.args[1].EvalString(b.ctx, row)
+	if isNull || err != nil {
+		return 0, isNull, err
+	}
+	res := types.CompareString(left, right)
+	return int64(res), false, nil
+}
+
+type bm25FunctionClass struct {
+	baseFunctionClass
+}
+
+func (c *bm25FunctionClass) getFunction(ctx sessionctx.Context, args []Expression) (builtinFunc, error) {
+	if err := c.verifyArgs(args); err != nil {
+		return nil, err
+	}
+	bf := newBaseBuiltinFuncWithTp(ctx, args, types.ETInt, types.ETString, types.ETString)
+	bf.tp.Flen = 2
+	types.SetBinChsClnFlag(bf.tp)
+	sig := &builtinStrCmpBM25Score{bf}
+	sig.setPbCode(1103)
+	return sig, nil
+}
+
+type builtinStrCmpBM25Score struct {
+	baseBuiltinFunc
+}
+
+func (b *builtinStrCmpBM25Score) Clone() builtinFunc {
+	newSig := &builtinStrCmpBM25Score{}
+	newSig.cloneFrom(&b.baseBuiltinFunc)
+	return newSig
+}
+
+func (b *builtinStrCmpBM25Score) evalInt(row chunk.Row) (int64, bool, error) {
+	var (
+		left, right string
+		isNull      bool
+		err         error
+	)
 	left, isNull, err = b.args[0].EvalString(b.ctx, row)
 	if isNull || err != nil {
 		return 0, isNull, err
