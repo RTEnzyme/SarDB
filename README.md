@@ -1,3 +1,8 @@
+# SarDB(Search-and-Recommend Database)
+This DB is a simple search-and-recommend oriented distributed database (maybe) for education purpose or just entertainment, which is forked from VLDB Summer School 2021 labs, which is base on TinySQL and TinyKV by PingCAP. 
+
+Since the project is in the early stage of development, there is currently no detailed introduction doc. I referenced  VLDB Summar School 2021 Labs' doc as below.
+
 # VLDB Summer School 2021 Labs
 
 ## Introduction
