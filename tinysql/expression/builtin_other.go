@@ -155,6 +155,39 @@ func (b *builtinInStringSig) evalInt(row chunk.Row) (int64, bool, error) {
 	return 0, hasNull, nil
 }
 
+type builtinCutlStringSig struct {
+	baseBuiltinFunc
+}
+
+func (b *builtinCutlStringSig) Clone() builtinFunc {
+	newSig := &builtinCutlStringSig{}
+	newSig.cloneFrom(&b.baseBuiltinFunc)
+	return newSig
+}
+
+func (b *builtinCutlStringSig) evalInt(row chunk.Row) (int64, bool, error) {
+	arg0, isNull0, err := b.args[0].EvalString(b.ctx, row)
+	if isNull0 || err != nil {
+		return 0, isNull0, err
+	}
+	var hasNull bool
+	for _, arg := range b.args[1:] {
+		evaledArg, isNull, err := arg.EvalString(b.ctx, row)
+		if err != nil {
+			return 0, true, err
+		}
+		if isNull {
+			hasNull = true
+			continue
+		}
+		if arg0 == evaledArg {
+			return 1, false, nil
+		}
+	}
+
+	return 0, hasNull, nil
+}
+
 // builtinInRealSig see https://dev.mysql.com/doc/refman/5.7/en/comparison-operators.html#function_in
 type builtinInRealSig struct {
 	baseBuiltinFunc

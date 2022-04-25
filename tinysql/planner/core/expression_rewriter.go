@@ -320,6 +320,8 @@ func (er *expressionRewriter) Leave(originInNode ast.Node) (retNode ast.Node, ok
 		er.rowToScalarFunc(v)
 	case *ast.PatternInExpr:
 		er.inToExpression(len(v.List), v.Not, &v.Type)
+	case *ast.PatternCutlFunc:
+		er.cutlToExpression(len(v.List), v.Not, &v.Type)
 	case *ast.IsNullExpr:
 		er.isNullToExpression(v)
 	case *ast.DefaultExpr:
@@ -497,6 +499,7 @@ func (er *expressionRewriter) inToExpression(lLen int, not bool, tp *types.Field
 		}
 	}
 	var function expression.Expression
+
 	if allSameType && l == 1 && lLen > 1 {
 		function = er.notToExpression(not, ast.In, tp, er.ctxStack[stkLen-lLen-1:]...)
 	} else {
@@ -519,6 +522,45 @@ func (er *expressionRewriter) inToExpression(lLen int, not bool, tp *types.Field
 			}
 		}
 	}
+	er.ctxStackPop(lLen + 1)
+	er.ctxStackAppend(function, types.EmptyName)
+}
+
+// cutlToExpression converts in expression to a scalar function. The argument lLen means the length of in list.
+// The argument not means if the expression is not in. The tp stands for the expression type, which is always bool.
+// a in (b, c, d) will be rewritten as `(a = b) or (a = c) or (a = d)`.
+func (er *expressionRewriter) cutlToExpression(lLen int, not bool, tp *types.FieldType) {
+	stkLen := len(er.ctxStack)
+	l := expression.GetRowLen(er.ctxStack[stkLen-lLen-1])
+	for i := 0; i < lLen; i++ {
+		if l != expression.GetRowLen(er.ctxStack[stkLen-lLen+i]) {
+			er.err = expression.ErrOperandColumns.GenWithStackByArgs(l)
+			return
+		}
+	}
+	args := er.ctxStack[stkLen-lLen-1:]
+	query := er.ctxStack[stkLen-1]
+	var function expression.Expression
+	cut1 := &expression.Constant{
+		Value:   query.(*expression.Constant).Value,
+		RetType: query.(*expression.Constant).RetType,
+	}
+	eqFunctions := make([]expression.Expression, 0, lLen)
+	expr, _ := er.constructBinaryOpFunction(args[0], query, ast.EQ)
+	eqFunctions = append(eqFunctions, expr)
+	cut1.Value.SetString("hig")
+	expr2, _ := er.constructBinaryOpFunction(args[0], cut1, ast.EQ)
+	//for i := stkLen - lLen; i < stkLen; i++ {
+	//	expr, err := er.constructBinaryOpFunction(args[0], er.ctxStack[i], ast.EQ)
+	//	if err != nil {
+	//		er.err = err
+	//		return
+	//	}
+	//	eqFunctions = append(eqFunctions, expr)
+	//}
+	eqFunctions = append(eqFunctions, expr2)
+	function = expression.ComposeDNFCondition(er.sctx, eqFunctions...)
+
 	er.ctxStackPop(lLen + 1)
 	er.ctxStackAppend(function, types.EmptyName)
 }

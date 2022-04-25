@@ -306,6 +306,51 @@ func (n *PatternInExpr) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
+type PatternCutlFunc struct {
+	exprNode
+	// Expr is the value expression to be compared.
+	Expr ExprNode
+	// List is the list expression in compare list.
+	List []ExprNode
+	// Not is true, the expression is "not in".
+	Not bool
+}
+
+// Format the ExprNode into a Writer.
+func (n *PatternCutlFunc) Format(w io.Writer) {
+	n.Expr.Format(w)
+	fmt.Fprint(w, " CUTL (")
+	for i, expr := range n.List {
+		if i != 0 {
+			fmt.Fprint(w, ",")
+		}
+		expr.Format(w)
+	}
+	fmt.Fprint(w, ")")
+}
+
+// Accept implements Node Accept interface.
+func (n *PatternCutlFunc) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	n = newNode.(*PatternCutlFunc)
+	node, ok := n.Expr.Accept(v)
+	if !ok {
+		return n, false
+	}
+	n.Expr = node.(ExprNode)
+	for i, val := range n.List {
+		node, ok = val.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.List[i] = node.(ExprNode)
+	}
+	return v.Leave(n)
+}
+
 // IsNullExpr is the expression for null check.
 type IsNullExpr struct {
 	exprNode

@@ -94,6 +94,7 @@ import (
 	currentTs		"CURRENT_TIMESTAMP"
 	currentUser		"CURRENT_USER"
 	currentRole		"CURRENT_ROLE"
+	cutl            "CUTL"
 	database		"DATABASE"
 	databases		"DATABASES"
 	dayHour			"DAY_HOUR"
@@ -2347,7 +2348,11 @@ AnyOrAll:
 	}
 
 PredicateExpr:
-	BitExpr InOrNotOp '(' ExpressionList ')'
+    BitExpr "CUTL" '(' ExpressionList ')'
+    {
+        $$ = &ast.PatternCutlFunc{Expr: $1, List: $4.([]ast.ExprNode)}
+    }
+|	BitExpr InOrNotOp '(' ExpressionList ')'
 	{
 		$$ = &ast.PatternInExpr{Expr: $1, Not: !$2.(bool), List: $4.([]ast.ExprNode)}
 	}
@@ -3138,6 +3143,7 @@ FunctionNameConflict:
 |	"USER"
 |	"WEEK"
 |	"YEAR"
+
 
 OptionalBraces:
 	{} | '(' ')' {}

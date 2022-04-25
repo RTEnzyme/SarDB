@@ -111,3 +111,13 @@ func (s *testSuite3) TestInvertedIndex(c *C) {
 	tk.MustExec("insert into t1(a, b) values(2, 'efg')")
 	fmt.Println("res: ", tk.MustQuery(`select a, b from t1 where b in ('abc')`))
 }
+
+func (s *testSuite3) TestFuncCutl(c *C) {
+	tk := testkit.NewTestKit(c, s.store)
+	tk.MustExec("use test")
+	tk.MustExec("create table t1 (a int, b varchar(256))")
+	tk.MustExec("insert into t1(a, b) values(1, 'bcd')")
+	tk.MustExec("insert into t1(a, b) values(2, 'efg')")
+	tk.MustExec("insert into t1(a, b) values(2, 'hig')")
+	fmt.Println("res: ", tk.MustQuery(`select a, b from t1 where b search_cutl('bcd')`))
+}

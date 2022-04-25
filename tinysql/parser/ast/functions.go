@@ -52,6 +52,7 @@ const (
 	SetVar      = "setvar"
 	GetVar      = "getvar"
 	Values      = "values"
+	Cutl        = "cutl"
 )
 
 // FuncCallExpr is for function expression.
