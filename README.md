@@ -5,6 +5,8 @@ Since the project is in the early stage of development, there is currently no de
 
 I know that the code of the current project mainly comes from TinySQL-TinyKV, and I will do my best to add my own ideas to this project.
 
+This project is just buit for Graduation Project, which can't be guaranteed to be stable, so don't use it in any production.
+
 # VLDB Summer School 2021 Labs
 
 ## Introduction
