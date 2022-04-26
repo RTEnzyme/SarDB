@@ -72,10 +72,10 @@ func (s *testExpressionRewriterSuite) TestCutlRewrite(c *C) {
 	tk.MustExec("use test")
 	tk.MustExec("drop table if exists t")
 	tk.MustExec("CREATE TABLE t(a int, b int, c varchar(255));")
-	tk.MustExec("INSERT INTO t VALUES (1, 2, '概念'), (2, 3, '数据库系统'), (3, 4, '数据库系统概念')")
+	tk.MustExec("INSERT INTO t VALUES (1, 2, '概念'), (2, 3, '数据库系统'), (3, 4, '数据库系统概念'), (4, 5, '数据库'), (5, 6, '系统')")
 	fmt.Println(tk.MustQuery("SELECT * FROM t ").Rows())
-	tk.MustQuery("SELECT * FROM t WHERE c cutl('数据库系统概念')").Check(testkit.Rows("1 2 概念", "2 3 数据库系统"))
-	tk.MustQuery("SELECT * FROM t WHERE c cutl('数据库系统概念') and c != '数据库系统'").Check(testkit.Rows("1 2 概念"))
-	tk.MustQuery("SELECT * FROM t WHERE c cutl('数据库系统概念') and c != '数据库系统' and c != '概念'").Check(testkit.Rows())
+	tk.MustQuery("SELECT c FROM t WHERE c cutl('数据库系统概念')").Check(testkit.Rows("概念", "数据库系统", "数据库", "系统"))
+	tk.MustQuery("SELECT c FROM t WHERE c cutl('数据库系统概念') and c != '数据库系统'").Check(testkit.Rows("概念", "数据库", "系统"))
+	tk.MustQuery("SELECT c FROM t WHERE c cutl('数据库系统概念') and c != '数据库系统' and c != '概念'").Check(testkit.Rows("数据库", "系统"))
 
 }

@@ -546,7 +546,7 @@ func (er *expressionRewriter) cutlToExpression(lLen int, not bool, tp *types.Fie
 	queryString := query.(*expression.Constant).Value.GetString()
 	eqFunctions := make([]expression.Expression, 0, lLen)
 	var function expression.Expression
-	for _, seg := range parser.Jieba.Cut(queryString, true) {
+	for _, seg := range parser.Jieba.CutForSearch(queryString, true) {
 		cutItem := &expression.Constant{
 			Value:   types.NewStringDatum(seg),
 			RetType: queryRetType,
