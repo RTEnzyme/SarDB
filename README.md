@@ -3,6 +3,10 @@ This DB is a simple search-and-recommend oriented distributed database (maybe) f
 
 Since the project is in the early stage of development, there is currently no detailed introduction doc. I referenced  VLDB Summar School 2021 Labs' doc as below.
 
+I know that the code of the current project mainly comes from TinySQL-TinyKV, and I will do my best to add my own ideas to this project.
+
+This project is just buit for Graduation Project, which can't be guaranteed to be stable, so don't use it in any production.
+
 # VLDB Summer School 2021 Labs
 
 ## Introduction
