@@ -14,11 +14,13 @@
 package expression
 
 import (
+	"fmt"
 	. "github.com/pingcap/check"
 	"github.com/pingcap/errors"
 	"github.com/pingcap/tidb/parser/ast"
 	"github.com/pingcap/tidb/types"
 	"github.com/pingcap/tidb/util/chunk"
+	"github.com/pingcap/tidb/util/stringutil"
 )
 
 func (s *testEvaluatorSuite) TestLengthAndOctetLength(c *C) {
@@ -97,4 +99,14 @@ func (s *testEvaluatorSuite) TestStrcmp(c *C) {
 			}
 		}
 	}
+}
+
+func (s *testEvaluatorSuite) TestTFIDFScore(c *C) {
+	fmt.Println(stringutil.TFIDFScore("数据库系统", "数据库系统概念"))
+	fmt.Println(stringutil.TFIDFScore("数据库系统", "跟鸟哥学Linux"))
+
+	fmt.Println(stringutil.TFIDFScore("2022年4月23日，南京工程高等职业技术学校一学生被骗，嫌疑人通过微信冒充受害人同学，对方以为咖啡店充值返利5倍为由诱骗受害人使用用支付宝扫码的方式转账，后发现被骗，损失1200元",
+		"2022年4月24日，江苏经贸职业技术学院一学生被骗，嫌疑人在“交易猫”网站上发布出售“元神”游戏账号信息，受害人通过QQ联系对方，后对方发送陌生交易链接给受害人，诱导受害人点击该链接脱离平台交易，再以异地付款资金冻结为由，诱骗受害人通过自己支付宝向对方转账，后发现被骗，损失2000元"))
+	fmt.Println(stringutil.TFIDFScore("2022年4月23日，南京工程高等职业技术学校一学生被骗，嫌疑人通过微信冒充受害人同学，对方以为咖啡店充值返利5倍为由诱骗受害人使用用支付宝扫码的方式转账，后发现被骗，损失1200元",
+		"通知，为更好服务大学生高质量就业，助力县区经济和产业发展。今年新增直播荐岗县区专场，首场活动“百校千企万岗”2022年江苏省大学生就业帮扶“送岗直通车”直播荐岗活动南京六合（智能制造）专场线上直播时间为4月28日（明天）14:30开始，届时有15家优质企业提供约400个岗位，请2022届、2023届毕业生及时收看，详情参见江苏共青团微信推送。谢谢！"))
 }

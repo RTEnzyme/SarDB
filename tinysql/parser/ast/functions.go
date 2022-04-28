@@ -54,6 +54,7 @@ const (
 	Values      = "values"
 	Cutl        = "cutl"
 	BM25CMP     = "bm25cmp"
+	TFIDFCMP    = "tfidfcmp"
 )
 
 // FuncCallExpr is for function expression.

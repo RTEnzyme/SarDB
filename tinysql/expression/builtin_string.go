@@ -22,6 +22,7 @@ import (
 	"github.com/pingcap/tidb/sessionctx"
 	"github.com/pingcap/tidb/types"
 	"github.com/pingcap/tidb/util/chunk"
+	"github.com/pingcap/tidb/util/stringutil"
 	"github.com/pingcap/tipb/go-tipb"
 )
 
@@ -136,7 +137,7 @@ func (c *bm25FunctionClass) getFunction(ctx sessionctx.Context, args []Expressio
 	if err := c.verifyArgs(args); err != nil {
 		return nil, err
 	}
-	bf := newBaseBuiltinFuncWithTp(ctx, args, types.ETInt, types.ETString, types.ETString)
+	bf := newBaseBuiltinFuncWithTp(ctx, args, types.ETReal, types.ETString, types.ETString)
 	bf.tp.Flen = 2
 	types.SetBinChsClnFlag(bf.tp)
 	sig := &builtinStrCmpBM25Score{bf}
@@ -154,7 +155,7 @@ func (b *builtinStrCmpBM25Score) Clone() builtinFunc {
 	return newSig
 }
 
-func (b *builtinStrCmpBM25Score) evalInt(row chunk.Row) (int64, bool, error) {
+func (b *builtinStrCmpBM25Score) evalReal(row chunk.Row) (float64, bool, error) {
 	var (
 		left, right string
 		isNull      bool
@@ -169,5 +170,48 @@ func (b *builtinStrCmpBM25Score) evalInt(row chunk.Row) (int64, bool, error) {
 		return 0, isNull, err
 	}
 	res := types.CompareString(left, right)
-	return int64(res), false, nil
+	return float64(res), false, nil
+}
+
+type tfidfFunctionClass struct {
+	baseFunctionClass
+}
+
+func (c *tfidfFunctionClass) getFunction(ctx sessionctx.Context, args []Expression) (builtinFunc, error) {
+	if err := c.verifyArgs(args); err != nil {
+		return nil, err
+	}
+	bf := newBaseBuiltinFuncWithTp(ctx, args, types.ETReal, types.ETString, types.ETString)
+	bf.tp.Flen = 2
+	types.SetBinChsClnFlag(bf.tp)
+	sig := &builtinStrCmpTFIDFScore{bf}
+	sig.setPbCode(1104)
+	return sig, nil
+}
+
+type builtinStrCmpTFIDFScore struct {
+	baseBuiltinFunc
+}
+
+func (b *builtinStrCmpTFIDFScore) Clone() builtinFunc {
+	newSig := &builtinStrCmpTFIDFScore{}
+	newSig.cloneFrom(&b.baseBuiltinFunc)
+	return newSig
+}
+
+func (b *builtinStrCmpTFIDFScore) evalReal(row chunk.Row) (float64, bool, error) {
+	var (
+		left, right string
+		isNull      bool
+		err         error
+	)
+	left, isNull, err = b.args[0].EvalString(b.ctx, row)
+	if isNull || err != nil {
+		return 0, isNull, err
+	}
+	right, isNull, err = b.args[1].EvalString(b.ctx, row)
+	if isNull || err != nil {
+		return 0, isNull, err
+	}
+	return stringutil.TFIDFScore(left, right), false, nil
 }

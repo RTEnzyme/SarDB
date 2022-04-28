@@ -362,6 +362,7 @@ var funcs = map[string]functionClass{
 	ast.GetVar:     &getVarFunctionClass{baseFunctionClass{ast.GetVar, 1, 1}},
 	ast.Cutl:       &inFunctionClass{baseFunctionClass{ast.In, 1, -1}},
 	ast.BM25CMP:    &bm25FunctionClass{baseFunctionClass{ast.BM25CMP, 2, 2}},
+	ast.TFIDFCMP:   &tfidfFunctionClass{baseFunctionClass{ast.TFIDFCMP, 2, 2}},
 }
 
 // IsFunctionSupported check if given function name is a builtin sql function.
